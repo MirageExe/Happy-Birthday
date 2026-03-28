@@ -1,0 +1,647 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Для тебя 🤍</title>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Cormorant+Garamond:wght@300;400;500&family=Unbounded:wght@300;400;700&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0a0808;
+      --surface: #150e0e;
+      --surface2: #1e1212;
+      --accent: #f4a0a0;
+      --accent2: #c0152a;
+      --accent3: #8b0000;
+      --text: #f5e8e8;
+      --text-muted: #a08888;
+      --tab-w: 72px;
+    }
+
+    html, body {
+      height: 100%;
+      overflow: hidden;
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Cormorant Garamond', serif;
+    }
+
+    /* Grain overlay */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+      pointer-events: none;
+      z-index: 9999;
+      opacity: 0.5;
+    }
+
+    /* Layout */
+    .layout {
+      display: flex;
+      height: 100vh;
+      position: relative;
+    }
+
+    /* Side Tab Rail */
+    .tab-rail {
+      width: var(--tab-w);
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      gap: 4px;
+      background: var(--surface);
+      border-right: 1px solid #2e1515;
+      z-index: 100;
+      flex-shrink: 0;
+      position: relative;
+    }
+
+    .tab-rail::after {
+      content: '';
+      position: absolute;
+      top: 0; right: -1px;
+      width: 1px; height: 100%;
+      background: linear-gradient(to bottom, transparent, var(--accent2), var(--accent3), var(--accent2), transparent);
+      opacity: 0.6;
+    }
+
+    .tab-btn {
+      position: relative;
+      width: 100%;
+      padding: 18px 0;
+      cursor: pointer;
+      border: none;
+      background: transparent;
+      color: var(--text-muted);
+      transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+      overflow: hidden;
+      border-left: 3px solid transparent;
+    }
+
+    .tab-btn::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(135deg, var(--accent3)18, var(--accent2)12);
+      opacity: 0;
+      transition: opacity 0.35s;
+    }
+
+    .tab-btn:hover::before, .tab-btn.active::before {
+      opacity: 1;
+    }
+
+    .tab-btn.active {
+      color: var(--accent);
+      border-left-color: var(--accent2);
+    }
+
+    .tab-btn:hover {
+      color: var(--text);
+    }
+
+    .tab-label {
+      writing-mode: vertical-rl;
+      transform: rotate(180deg);
+      font-family: 'Unbounded', sans-serif;
+      font-size: 9px;
+      font-weight: 300;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      position: relative;
+      z-index: 1;
+    }
+
+    .tab-icon {
+      display: block;
+      font-size: 16px;
+      margin-bottom: 8px;
+      position: relative;
+      z-index: 1;
+    }
+
+    /* Main Content */
+    .content-area {
+      flex: 1;
+      height: 100%;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .page {
+      position: absolute;
+      inset: 0;
+      padding: 48px 56px;
+      overflow-y: auto;
+      opacity: 0;
+      transform: translateX(24px);
+      transition: all 0.45s cubic-bezier(0.4, 0, 0.2, 1);
+      pointer-events: none;
+    }
+
+    .page.active {
+      opacity: 1;
+      transform: translateX(0);
+      pointer-events: all;
+    }
+
+    .page::-webkit-scrollbar { width: 4px; }
+    .page::-webkit-scrollbar-track { background: transparent; }
+    .page::-webkit-scrollbar-thumb { background: var(--surface2); border-radius: 2px; }
+
+    /* Page header style */
+    .page-header {
+      margin-bottom: 40px;
+    }
+
+    .page-tag {
+      font-family: 'Unbounded', sans-serif;
+      font-size: 10px;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--accent2);
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .page-tag::before {
+      content: '';
+      display: inline-block;
+      width: 24px; height: 1px;
+      background: var(--accent2);
+    }
+
+    .page-title {
+      font-family: 'Playfair Display', serif;
+      font-size: clamp(36px, 5vw, 64px);
+      font-weight: 400;
+      line-height: 1.05;
+      color: var(--text);
+      margin-bottom: 8px;
+    }
+
+    .page-title em {
+      font-style: italic;
+      color: var(--accent);
+    }
+
+    /* Media placeholder */
+    .media-box {
+      width: 100%;
+      aspect-ratio: 16/9;
+      max-height: 320px;
+      background: var(--surface2);
+      border: 1px dashed #3a1a1a;
+      border-radius: 4px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      color: var(--text-muted);
+      font-size: 13px;
+      margin-bottom: 32px;
+      position: relative;
+      overflow: hidden;
+      cursor: pointer;
+      transition: border-color 0.3s;
+    }
+
+    .media-box:hover { border-color: var(--accent2); }
+
+    .media-box .upload-icon {
+      font-size: 32px;
+      opacity: 0.5;
+    }
+
+    .media-box label {
+      font-family: 'Unbounded', sans-serif;
+      font-size: 9px;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--accent);
+      cursor: pointer;
+    }
+
+    .media-box input[type="file"] {
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      cursor: pointer;
+    }
+
+    .media-box img, .media-box video {
+      position: absolute;
+      inset: 0;
+      width: 100%; height: 100%;
+      object-fit: cover;
+      border-radius: 4px;
+    }
+
+    /* Text content */
+    .mini-text {
+      font-size: 17px;
+      font-weight: 300;
+      line-height: 1.9;
+      color: var(--text-muted);
+      max-width: 680px;
+    }
+
+    .mini-text strong {
+      color: var(--accent);
+      font-weight: 500;
+    }
+
+    /* Placeholder editable text */
+    .editable {
+      outline: none;
+      border-bottom: 1px solid transparent;
+      transition: border-color 0.3s;
+    }
+
+    .editable:focus {
+      border-bottom-color: var(--accent2);
+    }
+
+    /* Grid for mini photos */
+    .photo-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      margin-bottom: 32px;
+    }
+
+    .photo-slot {
+      aspect-ratio: 1;
+      background: var(--surface2);
+      border: 1px dashed #3a1a1a;
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 22px;
+      position: relative;
+      overflow: hidden;
+      cursor: pointer;
+      transition: border-color 0.3s;
+    }
+
+    .photo-slot:hover { border-color: var(--accent2); }
+
+    .photo-slot input[type="file"] {
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      cursor: pointer;
+    }
+
+    .photo-slot img {
+      position: absolute;
+      inset: 0;
+      width: 100%; height: 100%;
+      object-fit: cover;
+    }
+
+    /* Quote block */
+    .quote-block {
+      border-left: 2px solid var(--accent2);
+      padding: 16px 24px;
+      margin: 24px 0;
+      background: linear-gradient(to right, #1e1728, transparent);
+      border-radius: 0 4px 4px 0;
+    }
+
+    .quote-block p {
+      font-family: 'Playfair Display', serif;
+      font-style: italic;
+      font-size: 20px;
+      color: var(--text);
+      line-height: 1.6;
+    }
+
+    /* Divider */
+    .divider {
+      width: 100%; height: 1px;
+      background: linear-gradient(to right, var(--accent2)55, transparent);
+      margin: 32px 0;
+    }
+
+    /* Timeline dots */
+    .timeline {
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+      margin-bottom: 32px;
+    }
+
+    .timeline-item {
+      display: flex;
+      gap: 20px;
+      align-items: flex-start;
+    }
+
+    .tl-dot {
+      flex-shrink: 0;
+      width: 10px; height: 10px;
+      border-radius: 50%;
+      background: var(--accent2);
+      margin-top: 6px;
+      box-shadow: 0 0 12px var(--accent2);
+    }
+
+    .tl-content { flex: 1; }
+
+    .tl-label {
+      font-family: 'Unbounded', sans-serif;
+      font-size: 9px;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--accent2);
+      margin-bottom: 4px;
+    }
+
+    .tl-text {
+      font-size: 16px;
+      color: var(--text-muted);
+      line-height: 1.7;
+    }
+
+    /* Cheburek card Easter egg */
+    .cheburek-card {
+      display: inline-flex;
+      align-items: center;
+      gap: 12px;
+      background: var(--surface2);
+      border: 1px solid #2e1515;
+      border-radius: 8px;
+      padding: 16px 24px;
+      margin-bottom: 16px;
+      transition: all 0.3s;
+      cursor: default;
+    }
+
+    .cheburek-card:hover {
+      border-color: var(--accent2);
+      transform: translateY(-2px);
+      box-shadow: 0 8px 32px rgba(192, 21, 42, 0.12);
+    }
+
+    .cheburek-emoji { font-size: 32px; }
+    .cheburek-text { font-size: 15px; color: var(--text-muted); }
+    .cheburek-text strong { color: var(--text); display: block; font-size: 17px; }
+
+    /* Final page heart */
+    .big-heart {
+      font-size: 80px;
+      display: block;
+      margin: 32px 0 16px;
+      animation: pulse 2.5s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.08); }
+    }
+
+    /* Ambient glow top right */
+    .content-area::before {
+      content: '';
+      position: absolute;
+      top: -80px; right: -80px;
+      width: 400px; height: 400px;
+      background: radial-gradient(circle, #8b000020, transparent 70%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* Scrollbar for entire page */
+    ::-webkit-scrollbar { width: 4px; }
+    ::-webkit-scrollbar-thumb { background: #2e1515; }
+
+    /* Responsive */
+    @media (max-width: 600px) {
+      .page { padding: 32px 24px; }
+      .tab-rail { width: 56px; }
+      :root { --tab-w: 56px; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="layout">
+
+  <!-- Side Tab Rail -->
+  <nav class="tab-rail">
+    <button class="tab-btn active" onclick="switchTab(0)" title="Детство">
+      <span class="tab-icon">🌸</span>
+      <span class="tab-label">Детство</span>
+    </button>
+    <button class="tab-btn" onclick="switchTab(1)" title="Наши дни">
+      <span class="tab-icon">✨</span>
+      <span class="tab-label">Наши дни</span>
+    </button>
+    <button class="tab-btn" onclick="switchTab(2)" title="Минутка выебона">
+      <span class="tab-icon">💅</span>
+      <span class="tab-label">Минутка выебона</span>
+    </button>
+    <button class="tab-btn" onclick="switchTab(3)" title="Чебуреки">
+      <span class="tab-icon">🥟</span>
+      <span class="tab-label">Чебуреки</span>
+    </button>
+    <button class="tab-btn" onclick="switchTab(4)" title="Заключение">
+      <span class="tab-icon">🤍</span>
+      <span class="tab-label">Заключение</span>
+    </button>
+  </nav>
+
+  <!-- Content -->
+  <main class="content-area">
+
+    <!-- Page 0: Детство -->
+    <section class="page active" id="page-0">
+      <div class="page-header">
+        <div class="page-tag">Глава первая</div>
+        <h1 class="page-title">Когда мы были<br><em>маленькими</em></h1>
+      </div>
+
+      <div class="media-box" id="main-media-box">
+        <span class="upload-icon">🖼️</span>
+        <label>Нажми, чтобы добавить файл</label>
+        <input type="file" accept="image/*,video/*" onchange="handleMedia(this, 'main-media-box')">
+      </div>
+
+      <p class="mini-text">
+        <span class="editable" contenteditable="true">Здесь будет твой текст о детстве..</span>
+      </p>
+    </section>
+
+    <!-- Page 1: Наши дни -->
+    <section class="page" id="page-1">
+      <div class="page-header">
+        <div class="page-tag">Глава вторая</div>
+        <h1 class="page-title">Наши <em>дни</em></h1>
+      </div>
+
+      <div class="photo-grid">
+        <div class="photo-slot" id="slot-0">🌿<input type="file" accept="image/*" onchange="handleSlot(this,'slot-0')"></div>
+        <div class="photo-slot" id="slot-1">🌙<input type="file" accept="image/*" onchange="handleSlot(this,'slot-1')"></div>
+        <div class="photo-slot" id="slot-2">🎵<input type="file" accept="image/*" onchange="handleSlot(this,'slot-2')"></div>
+        <div class="photo-slot" id="slot-3">☕<input type="file" accept="image/*" onchange="handleSlot(this,'slot-3')"></div>
+        <div class="photo-slot" id="slot-4">🌸<input type="file" accept="image/*" onchange="handleSlot(this,'slot-4')"></div>
+        <div class="photo-slot" id="slot-5">✨<input type="file" accept="image/*" onchange="handleSlot(this,'slot-5')"></div>
+      </div>
+
+      <div class="divider"></div>
+
+      <p class="mini-text">
+        <span class="editable" contenteditable="true">Сейчас, когда мы уже не такие маленькие..</span>
+      </p>
+    </section>
+
+    <!-- Page 2: Минутка выебона -->
+    <section class="page" id="page-2">
+      <div class="page-header">
+        <div class="page-tag">Специальный раздел</div>
+        <h1 class="page-title">Минутка<br><em>выебона</em> 💅</h1>
+      </div>
+
+      <div class="timeline">
+        <div class="timeline-item">
+          <div class="tl-dot"></div>
+          <div class="tl-content">
+            <div class="tl-label">Момент 1</div>
+            <p class="tl-text editable" contenteditable="true">Добавь сюда »</p>
+          </div>
+        </div>
+        <div class="timeline-item">
+          <div class="tl-dot"></div>
+          <div class="tl-content">
+            <div class="tl-label">Момент 2</div>
+            <p class="tl-text editable" contenteditable="true">Сюда.</p>
+          </div>
+        </div>
+        <div class="timeline-item">
+          <div class="tl-dot"></div>
+          <div class="tl-content">
+            <div class="tl-label">Момент 3</div>
+            <p class="tl-text editable" contenteditable="true">Сюда.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="quote-block">
+        <p class="editable" contenteditable="true">«Напиши сюда цитату или че угодно.»</p>
+      </div>
+    </section>
+
+    <!-- Page 3: Чебуреки -->
+    <section class="page" id="page-3">
+      <div class="page-header">
+        <div class="page-tag">Важный раздел</div>
+        <h1 class="page-title">Про <em>чебуреки</em> 🥟</h1>
+      </div>
+
+      <div class="cheburek-card">
+        <span class="cheburek-emoji">🥟</span>
+        <div class="cheburek-text">
+          <strong class="editable" contenteditable="true">Место или момент</strong>
+          <span class="editable" contenteditable="true">История.</span>
+        </div>
+      </div>
+      <br>
+      <div class="cheburek-card">
+        <span class="cheburek-emoji">🔥</span>
+        <div class="cheburek-text">
+          <strong class="editable" contenteditable="true">Че-то еще</strong>
+          <span class="editable" contenteditable="true">История/че угодно.</span>
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <p class="mini-text">
+        <span class="editable" contenteditable="true">Подробнее расскажи здесь.</span>
+      </p>
+    </section>
+
+    <!-- Page 4: Заключение -->
+    <section class="page" id="page-4">
+      <div class="page-header">
+        <div class="page-tag">Финал</div>
+        <h1 class="page-title"><em>Заключение</em></h1>
+      </div>
+
+      <span class="big-heart">🤍</span>
+
+      <p class="mini-text" style="font-size:20px; margin-bottom:24px;">
+        <span class="editable" contenteditable="true">Здесь можно написать самое главное.</span>
+      </p>
+
+      <div class="quote-block">
+        <p class="editable" contenteditable="true">«Теплые слова на последок.»</p>
+      </div>
+
+      <div class="divider"></div>
+
+      <p class="mini-text" style="font-size:14px; color: #5a3030;">
+        Сделано с любовью by Уиттик ✦
+      </p>
+    </section>
+
+  </main>
+</div>
+
+<script>
+  const tabs = document.querySelectorAll('.tab-btn');
+  const pages = document.querySelectorAll('.page');
+
+  function switchTab(idx) {
+    tabs.forEach((t, i) => t.classList.toggle('active', i === idx));
+    pages.forEach((p, i) => p.classList.toggle('active', i === idx));
+  }
+
+  function handleMedia(input, boxId) {
+    const file = input.files[0];
+    if (!file) return;
+    const box = document.getElementById(boxId);
+    const url = URL.createObjectURL(file);
+    box.innerHTML = '';
+    if (file.type.startsWith('video/')) {
+      const vid = document.createElement('video');
+      vid.src = url; vid.autoplay = true; vid.loop = true; vid.muted = true;
+      vid.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:4px;';
+      box.appendChild(vid);
+    } else {
+      const img = document.createElement('img');
+      img.src = url;
+      box.appendChild(img);
+    }
+  }
+
+  function handleSlot(input, slotId) {
+    const file = input.files[0];
+    if (!file) return;
+    const slot = document.getElementById(slotId);
+    const url = URL.createObjectURL(file);
+    slot.innerHTML = '';
+    const img = document.createElement('img');
+    img.src = url;
+    slot.appendChild(img);
+  }
+
+  // Keyboard nav
+  document.addEventListener('keydown', e => {
+    const active = Array.from(tabs).findIndex(t => t.classList.contains('active'));
+    if (e.key === 'ArrowDown' || e.key === 'ArrowRight') switchTab(Math.min(active + 1, tabs.length - 1));
+    if (e.key === 'ArrowUp' || e.key === 'ArrowLeft') switchTab(Math.max(active - 1, 0));
+  });
+</script>
+</body>
+</html>
